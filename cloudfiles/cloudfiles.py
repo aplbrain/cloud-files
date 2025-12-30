@@ -63,6 +63,8 @@ INTERFACES = {
 for alias in ALIASES:
   INTERFACES[alias] = S3Interface
 
+ALTERNATIVE_CLOUDPATH = "gs://v1dd_imagery/image/aligned_image/"
+
 def parallelize(desc=None, returns_list=False):
   """
   @parallelize 
@@ -370,6 +372,18 @@ class CloudFiles:
       no_sign_request=self.no_sign_request,
     )
 
+  def _get_alternative_connection(self):
+    path = paths.extract(ALTERNATIVE_CLOUDPATH)
+    return self._interface_cls(
+      path, 
+      secrets=self.secrets,
+      request_payer=self.request_payer,
+      locking=self.locking,
+      lock_dir=self.lock_dir,
+      composite_upload_threshold=self.composite_upload_threshold,
+      no_sign_request=self.no_sign_request,
+    )
+
   @property
   def protocol(self):
     return self._path.protocol
@@ -487,7 +501,12 @@ class CloudFiles:
           content, encoding, server_hash, server_hash_type = conn.get_file(
             path, start=start, end=end, part_size=part_size
           )
-        
+        if content is None:
+          # bossdb-v1dd-transfer bucket did not have the requested chunk, grab from coldline bucket
+          with self._get_alternative_connection() as conn:
+            content, encoding, server_hash, server_hash_type = conn.get_file(
+              path, start=start, end=end, part_size=part_size
+          )
         num_bytes_rx = len(content) if content is not None else 0
 
         # md5s don't match for partial reads
