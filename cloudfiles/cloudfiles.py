@@ -21,6 +21,7 @@ import shutil
 import threading
 import types
 import time
+import logging 
 
 import orjson
 import pathos.pools
@@ -63,6 +64,7 @@ INTERFACES = {
 for alias in ALIASES:
   INTERFACES[alias] = S3Interface
 
+logging.basicConfig(format="%(asctime)s - %(message)s", level=logging.DEBUG)
 ALTERNATIVE_CLOUDPATH = "gs://v1dd_imagery/image/aligned_image/"
 
 def parallelize(desc=None, returns_list=False):
@@ -503,6 +505,7 @@ class CloudFiles:
           )
         if content is None:
           # bossdb-v1dd-transfer bucket did not have the requested chunk, grab from coldline bucket
+          logging.debug(f"Grabing object: {path} from alternative source.")
           with self._get_alternative_connection() as conn:
             content, encoding, server_hash, server_hash_type = conn.get_file(
               path, start=start, end=end, part_size=part_size
