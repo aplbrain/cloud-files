@@ -22,7 +22,7 @@ from .exceptions import DecompressionError, CompressionError
 COMPRESSION_TYPES = [ 
   None, False, True,
   '', 'bz2', 'bzip2', 'gzip', 'br', 'zstd', 
-  'xz', 'lzma'
+  'xz', 'lzma', 'identity'
 ]
 
 def transcode(
@@ -110,7 +110,7 @@ def decompress(content, encoding, filename='N/A'):
   """
   try:
     encoding = (encoding or '').lower()
-    if encoding == '':
+    if encoding == '' or encoding  == 'identity':
       return content
     elif len(content) == 0:
       raise DecompressionError('File contains zero bytes: ' + str(filename))
